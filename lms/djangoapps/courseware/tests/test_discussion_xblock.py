@@ -246,9 +246,9 @@ class TestTemplates(TestDiscussionXBlock):
         self.assertIn('data-user-create-comment="{}"'.format(json.dumps(permissions[1])), fragment.content)
         self.assertIn('data-user-create-subcomment="{}"'.format(json.dumps(permissions[2])), fragment.content)
         if permissions[0]:
-            self.assertIn("Add a Post", fragment.content)
+            self.assertNotIn("is-hidden", fragment.content)
         else:
-            self.assertNotIn("Add a Post", fragment.content)
+            self.assertIn("is-hidden", fragment.content)
 
 
 @ddt.ddt
