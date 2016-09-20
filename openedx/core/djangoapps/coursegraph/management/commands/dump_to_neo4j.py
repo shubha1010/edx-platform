@@ -6,14 +6,19 @@ from __future__ import unicode_literals
 
 import logging
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils import six
+from opaque_keys.edx.keys import CourseKey
 from py2neo import Graph, Node, Relationship, authenticate
 from py2neo.compat import integer, string, unicode as neo4j_unicode
 from request_cache.middleware import RequestCache
 from xmodule.modulestore.django import modulestore
-from opaque_keys.edx.keys import CourseKey
+
+from openedx.core.djangoapps.coursegraph.utils import (
+    CommandLastRunCache,
+    CourseLastPublishedCache,
+)
+
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +29,9 @@ bolt_log.setLevel(logging.ERROR)
 
 ITERABLE_NEO4J_TYPES = (tuple, list, set, frozenset)
 PRIMITIVE_NEO4J_TYPES = (integer, string, neo4j_unicode, float, bool)
+
+COMMAND_LAST_RUN_CACHE = CommandLastRunCache()
+COURSE_LAST_PUBLISHED_CACHE = CourseLastPublishedCache()
 
 
 class ModuleStoreSerializer(object):
@@ -159,12 +167,40 @@ class ModuleStoreSerializer(object):
         for entity in neo4j_entities:
             transaction.create(entity)
 
+    @staticmethod
+    def should_dump_course(course_key):
+        """
+        Only dump the course if it's been changed since the last time it's been
+        dumped.
+        :param course_key: a CourseKey object.
+        :return: bool. Whether or not this course should be dumped to neo4j.
+        """
 
-    def dump_courses_to_neo4j(self, graph):
+        last_this_command_was_run = COMMAND_LAST_RUN_CACHE.get(course_key)
+        last_course_had_published_event = COURSE_LAST_PUBLISHED_CACHE.get(
+            course_key
+        )
+
+        # if we have no record of this course being serialized, serialize it
+        if last_this_command_was_run is None:
+            return True
+
+        # if we've serialized the course recently and we have no published
+        # events, we can skip re-serializing it
+        if last_this_command_was_run and last_course_had_published_event is None:
+            return False
+
+        # otherwise, serialize if the command was run before the course's last
+        # published event
+        return last_this_command_was_run < last_course_had_published_event
+
+    def dump_courses_to_neo4j(self, graph, override_cache=False):
         """
         Parameters
         ----------
         graph: py2neo graph object
+        override_cache: serialize the courses even if they'be been recently
+            serialized
 
         Returns two lists: one of the courses that were successfully written
           to neo4j, and one of courses that were not.
@@ -185,6 +221,11 @@ class ModuleStoreSerializer(object):
                 index + 1,
                 total_number_of_courses,
             )
+
+            if not (override_cache or self.should_dump_course(course_key)):
+                log.info("skipping dumping %s, since it hasn't changed", course_key)
+                continue
+
             nodes, relationships = self.serialize_course(course_key)
             log.info(
                 "%d nodes and %d relationships in %s",
@@ -217,6 +258,7 @@ class ModuleStoreSerializer(object):
                 unsuccessful_courses.append(course_string)
 
             else:
+                COMMAND_LAST_RUN_CACHE.set(course_key)
                 successful_courses.append(course_string)
 
         return successful_courses, unsuccessful_courses
@@ -233,8 +275,7 @@ class Command(BaseCommand):
       password: the user's password
 
     Example usage:
-      python manage.py lms dump_to_neo4j --host localhost --port 7473 \
-        --user user --password password --settings=aws
+      python manage.py lms dump_to_neo4j --host localhost --port 7473 --user user --password password --settings=aws
     """
     def add_arguments(self, parser):
         parser.add_argument('--host', type=unicode)
@@ -242,6 +283,7 @@ class Command(BaseCommand):
         parser.add_argument('--user', type=unicode)
         parser.add_argument('--password', type=unicode)
         parser.add_argument('--courses', type=unicode, nargs='*')
+        parser.add_argument('--override', action='store_true', help='override the cache')
 
     def handle(self, *args, **options):  # pylint: disable=unused-argument
         """
@@ -271,7 +313,13 @@ class Command(BaseCommand):
         mss = ModuleStoreSerializer()
         mss.load_course_keys(options['courses'])
 
-        successful_courses, unsuccessful_courses = mss.dump_courses_to_neo4j(graph)
+        successful_courses, unsuccessful_courses = mss.dump_courses_to_neo4j(
+            graph, override_cache=options['override']
+        )
+
+        if not successful_courses and not unsuccessful_courses:
+            print("No courses exported to neo4j at all!")
+            return
 
         if successful_courses:
             print(
