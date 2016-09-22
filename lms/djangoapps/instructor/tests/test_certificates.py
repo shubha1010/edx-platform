@@ -390,8 +390,15 @@ class CertificatesInstructorApiTest(SharedModuleStoreTestCase):
             enrollment.update_enrollment(mode=CourseMode.VERIFIED)
             self.assertEquals(enrollment.mode, CourseMode.VERIFIED)
 
-            # Create user's ID verification record.
+            # Create and assert user's ID verification record.
             SoftwareSecurePhotoVerificationFactory.create(user=self.user, status=id_verification_status)
+            actual_verification_status = SoftwareSecurePhotoVerification.verification_status_for_user(
+                self.user,
+                self.course.id,
+                enrollment.mode,
+            )
+            self.assertEquals(actual_verification_status, verification_output)
+
             # Login the client and access the url with 'verified_users_with_audit_certs'
             self.client.login(username=self.global_staff.username, password='test')
             url = reverse(
@@ -421,18 +428,10 @@ class CertificatesInstructorApiTest(SharedModuleStoreTestCase):
                     u'the "Pending Tasks" section.'
                 )
 
-                # Assert ID verification status
-                actual_verification_status = SoftwareSecurePhotoVerification.verification_status_for_user(
-                    self.user,
-                    self.course.id,
-                    enrollment.mode,
-                )
-                self.assertEquals(actual_verification_status, verification_output)
-
-                # Now, check whether user has audit certificate.
-                cert = certs_api.get_certificate_for_user(self.user.username, self.course.id)
-                self.assertNotEquals(cert['status'], CertificateStatuses.audit_passing)
-                self.assertEquals(cert['status'], expected_cert_status)
+            # Now, check whether user has audit certificate.
+            cert = certs_api.get_certificate_for_user(self.user.username, self.course.id)
+            self.assertNotEquals(cert['status'], CertificateStatuses.audit_passing)
+            self.assertEquals(cert['status'], expected_cert_status)
 
     def test_certificate_regeneration_error(self):
         """
