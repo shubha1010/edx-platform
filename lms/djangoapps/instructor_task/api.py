@@ -505,7 +505,7 @@ def regenerate_certificates(request, course_key, statuses_to_regenerate, student
     task_input = {}
 
     if student_set is not None:
-        task_input.update(dict(student_set=student_set))
+        task_input.update({'student_set': student_set})
 
     # Update task_input with certificate statuses to regenerate.
     task_input.update({"statuses_to_regenerate": statuses_to_regenerate})

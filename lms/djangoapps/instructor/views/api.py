@@ -2821,7 +2821,7 @@ def start_certificate_regeneration(request, course_id):
     """
     course_key = CourseKey.from_string(course_id)
     certificates_statuses = request.POST.getlist('certificate_statuses', [])
-    verified_with_audit_certs = request.POST.get('verified_but_audit_certs')
+    verified_with_audit_certs = request.POST.get('verified_with_audit_certs')
     if not (certificates_statuses or verified_with_audit_certs):
         return JsonResponse(
             {'message': _('Please select one or more certificate statuses that require certificate regeneration.')},

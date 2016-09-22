@@ -326,11 +326,9 @@ def _section_certificates(course):
     }
 
     # Get the count of all course verified users with audit passing and audit not passing statuses.
-    verified_users_with_audit_certs = len(
-        CourseEnrollment.objects.users_enrolled_in(course.id, mode='verified').filter(
-            generatedcertificate__status__in=[CertificateStatuses.audit_passing, CertificateStatuses.audit_notpassing]
-        )
-    )
+    verified_users_with_audit_certs = CourseEnrollment.objects.users_enrolled_in(course.id, mode='verified').filter(
+        generatedcertificate__status__in=[CertificateStatuses.audit_passing, CertificateStatuses.audit_notpassing]
+    ).count()
 
     return {
         'section_key': 'certificates',
