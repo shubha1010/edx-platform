@@ -410,7 +410,7 @@ class CertificatesInstructorApiTest(SharedModuleStoreTestCase):
                 mock_send.return_value = (0, None)
                 response = self.client.post(
                     url,
-                    {'verified_with_audit_certs': 'verified_users_with_audit_certs'}
+                    {'certificate_statuses': 'verified_users_with_audit_certs'}
                 )
 
                 # Assert 200 status code in response
