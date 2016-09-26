@@ -28,6 +28,7 @@ from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 
 from xmodule.tests import get_test_descriptor_system
+from xmodule.validation import StudioValidationMessage
 from xmodule.video_module import VideoDescriptor, create_youtube_string
 from xmodule.video_module.transcripts_utils import download_youtube_subs, save_to_store
 from . import LogicTest
@@ -823,6 +824,12 @@ class VideoDescriptorIndexingTestCase(unittest.TestCase):
             }
         }
 
+        settings.ALL_LANGUAGES = (
+            [u"en", u"English"],
+            [u"eo", u"Esperanto"],
+            [u"ur", u"Urdu"]
+        )
+
         self.addCleanup(self.cleanup)
 
     def cleanup(self):
@@ -993,3 +1000,77 @@ class VideoDescriptorIndexingTestCase(unittest.TestCase):
         descriptor = instantiate_descriptor(data=None)
         translations = descriptor.available_translations(descriptor.get_transcripts_info(), verify_assets=False)
         self.assertEqual(translations, ['en'])
+
+    def test_video_with_lang_with_no_transcripts_translation(self):
+        """
+        Test translation retrieval of a video module with
+        a language having no transcripts uploaded by a user.
+        """
+        xml_data_transcripts = '''
+            <video display_name="Test Video"
+                   youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
+                   show_captions="false"
+                   download_track="false"
+                   start_time="00:00:01"
+                   download_video="false"
+                   end_time="00:01:00">
+              <source src="http://www.example.com/source.mp4"/>
+              <track src="http://www.example.com/track"/>
+              <handout src="http://www.example.com/handout"/>
+              <transcript language="ur" src="" />
+            </video>
+        '''
+        descriptor = instantiate_descriptor(data=xml_data_transcripts)
+        translations = descriptor.available_translations(descriptor.get_transcripts_info(), verify_assets=False)
+        self.assertNotEqual(translations, ['ur'])
+
+    def test_no_transcript_single_lang_validation_message(self):
+        """
+        Test the validation message for a language with no associated transcript file uploaded.
+        """
+        xml_data_transcripts = '''
+            <video display_name="Test Video"
+                   youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
+                   show_captions="false"
+                   download_track="false"
+                   start_time="00:00:01"
+                   download_video="false"
+                   end_time="00:01:00">
+              <source src="http://www.example.com/source.mp4"/>
+              <track src="http://www.example.com/track"/>
+              <handout src="http://www.example.com/handout"/>
+              <transcript language="ur" src="" />
+            </video>
+        '''
+        descriptor = instantiate_descriptor(data=xml_data_transcripts)
+        validation = descriptor.validate()
+        self.assertFalse(validation)  # Validation fails due to at least one warning/message
+        self.assertTrue(validation.summary)
+        self.assertEqual(StudioValidationMessage.WARNING, validation.summary.type)
+        self.assertIn("There is no transcript file associated", validation.summary.text)
+
+    def test_no_transcript_multi_lang_validation_message(self):
+        """
+        Test the validation message for languages with no associated transcript files uploaded.
+        """
+        xml_data_transcripts = '''
+            <video display_name="Test Video"
+                   youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
+                   show_captions="false"
+                   download_track="false"
+                   start_time="00:00:01"
+                   download_video="false"
+                   end_time="00:01:00">
+              <source src="http://www.example.com/source.mp4"/>
+              <track src="http://www.example.com/track"/>
+              <handout src="http://www.example.com/handout"/>
+              <transcript language="ur" src="" />
+              <transcript language="eo" src="" />
+            </video>
+        '''
+        descriptor = instantiate_descriptor(data=xml_data_transcripts)
+        validation = descriptor.validate()
+        self.assertFalse(validation)  # Validation fails due to at least one warning/message
+        self.assertTrue(validation.summary)
+        self.assertEqual(StudioValidationMessage.WARNING, validation.summary.type)
+        self.assertIn("There are no transcript files associated", validation.summary.text)
