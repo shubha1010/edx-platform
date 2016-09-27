@@ -295,10 +295,8 @@ def single_thread(request, course_key, discussion_id, thread_id):
     cc_user = cc.User.from_django_user(request.user)
     user_info = cc_user.to_dict()
     is_moderator = has_permission(request.user, "see_all_cohorts", course_key)
+    is_staff = has_permission(request.user, 'openclose_thread', course.id)
 
-    # Currently, the front end always loads responses via AJAX, even for this
-    # page; it would be a nice optimization to avoid that extra round trip to
-    # the comments service.
     try:
         thread = cc.Thread.find(thread_id).retrieve(
             with_responses=request.is_ajax(),
@@ -312,19 +310,18 @@ def single_thread(request, course_key, discussion_id, thread_id):
             raise Http404
         raise
 
-    # Verify that the student has access to this thread if belongs to a course discussion module
-    thread_context = getattr(thread, "context", "course")
-    if thread_context == "course" and not utils.discussion_category_id_access(course, request.user, discussion_id):
-        raise Http404
-
-    # verify that the thread belongs to the requesting student's cohort
-    if is_commentable_cohorted(course_key, discussion_id) and not is_moderator:
-        user_group_id = get_cohort_id(request.user, course_key)
-        if getattr(thread, "group_id", None) is not None and user_group_id != thread.group_id:
+    if request.is_ajax():
+        # Verify that the student has access to this thread if belongs to a course discussion module
+        thread_context = getattr(thread, "context", "course")
+        if thread_context == "course" and not utils.discussion_category_id_access(course, request.user, discussion_id):
             raise Http404
 
-    is_staff = has_permission(request.user, 'openclose_thread', course.id)
-    if request.is_ajax():
+        # verify that the thread belongs to the requesting student's cohort
+        if is_commentable_cohorted(course_key, discussion_id) and not is_moderator:
+            user_group_id = get_cohort_id(request.user, course_key)
+            if getattr(thread, "group_id", None) is not None and user_group_id != thread.group_id:
+                raise Http404
+
         with newrelic.agent.FunctionTrace(nr_transaction, "get_annotated_content_infos"):
             annotated_content_info = utils.get_annotated_content_infos(
                 course_key,
@@ -332,20 +329,18 @@ def single_thread(request, course_key, discussion_id, thread_id):
                 request.user,
                 user_info=user_info
             )
+
         content = utils.prepare_content(thread.to_dict(), course_key, is_staff)
         with newrelic.agent.FunctionTrace(nr_transaction, "add_courseware_context"):
             add_courseware_context([content], course, request.user)
+
         return utils.JsonResponse({
             'content': content,
             'annotated_content_info': annotated_content_info,
         })
-
     else:
-        try:
-            threads, query_params = get_threads(request, course, user_info)
-        except ValueError:
-            return HttpResponseBadRequest("Invalid group_id")
-        threads.append(thread.to_dict())
+        # We only care about providing enough context to render the view for this single thread.
+        threads = [thread.to_dict()]
 
         with newrelic.agent.FunctionTrace(nr_transaction, "add_courseware_context"):
             add_courseware_context(threads, course, request.user)
@@ -379,7 +374,7 @@ def single_thread(request, course_key, discussion_id, thread_id):
             'threads': threads,
             'roles': utils.get_role_ids(course_key),
             'is_moderator': is_moderator,
-            'thread_pages': query_params['num_pages'],
+            'thread_pages': 1,
             'is_course_cohorted': is_course_cohorted(course_key),
             'flag_moderator': bool(
                 has_permission(request.user, 'openclose_thread', course.id) or
