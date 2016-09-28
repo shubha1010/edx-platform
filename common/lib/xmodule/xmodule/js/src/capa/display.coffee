@@ -486,6 +486,7 @@ class @Problem
         @focus_on_save_notification()
       else
         @gentle_alert saveMessage
+      @updateProgress response
 
   refreshMath: (event, element) =>
     element = event.target unless element
@@ -598,6 +599,7 @@ class @Problem
         $p = $(element).find('span.status')
         `// Translators: the word unanswered here is about answering a problem the student must solve.`
         $p.parent().removeClass().addClass "unsubmitted"
+        $(element).find('.status .status-icon').remove()
 
     choicegroup: (element) ->
       $element = $(element)
@@ -607,10 +609,8 @@ class @Problem
         if $status[0]  # We found a status icon.
           $status.removeClass().addClass "unanswered"
           $status.empty().css 'display', 'inline-block'
-        else
-          # Recreate the unanswered dot on left.
-          $("<span>", {"class": "unanswered", "style": "display: inline-block;", "id": "status_#{id}"})
 
+        $(element).find('.status .status-icon').remove()
         $element.find("label").removeClass()
 
     'option-input': (element) ->
@@ -620,12 +620,14 @@ class @Problem
         $status = $("#status_#{id}")
           .removeClass().addClass("unanswered")
           .find('span').text(gettext('Status: unsubmitted'))
+        $(element).find('.status .status-icon').remove()
 
     textline: (element) ->
       $(element).find('input').on 'input', ->
         $p = $(element).find('span.status')
         `// Translators: the word unanswered here is about answering a problem the student must solve.`
         $p.parent().removeClass("correct incorrect").addClass "unsubmitted"
+        $(element).find('.status .status-icon').remove()
 
   inputtypeSetupMethods:
 
