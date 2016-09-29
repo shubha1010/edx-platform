@@ -75,6 +75,10 @@ def request_cached(wrapped):
           function elsewhere in the code with the same parameters could overwrite cached values
     """
     def wrapper(*args, **kwargs):
+        """
+        Wrapper function to decorate with.
+        """
+
         # Build our cache key based on the name of the function we're wrapping
         # and the parameters passed in to it.  This could get a little dicey
         # but the intention is that the only functions being decorated with this

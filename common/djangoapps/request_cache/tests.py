@@ -37,6 +37,9 @@ class TestRequestCache(TestCase):
         self.assertEqual(modulestore().request_cache.data, {})
 
     def test_request_cached_miss_and_then_hit(self):
+        """
+        Ensure that after a cache miss, we fill the cache and can hit it.
+        """
         RequestCache.clear_request_cache()
 
         to_be_wrapped = Mock()
@@ -44,6 +47,7 @@ class TestRequestCache(TestCase):
         self.assertEqual(to_be_wrapped.call_count, 0)
 
         def mock_wrapper():
+            """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped()
 
         wrapped = request_cached(mock_wrapper)
@@ -61,6 +65,9 @@ class TestRequestCache(TestCase):
         self.assertEqual(to_be_wrapped.call_count, 1)
 
     def test_request_cached_with_caches_despite_changing_wrapped_result(self):
+        """
+        Ensure that after caching a result, we always send it back, even if the underlying result changes.
+        """
         RequestCache.clear_request_cache()
 
         to_be_wrapped = Mock()
@@ -68,6 +75,7 @@ class TestRequestCache(TestCase):
         self.assertEqual(to_be_wrapped.call_count, 0)
 
         def mock_wrapper():
+            """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped()
 
         wrapped = request_cached(mock_wrapper)
@@ -92,13 +100,18 @@ class TestRequestCache(TestCase):
         self.assertEqual(to_be_wrapped.call_count, 3)
 
     def test_request_cached_with_changing_args(self):
+        """
+        Ensure that calling a decorated function with different positional arguments
+        will not use a cached value invoked by a previous call with different arguments.
+        """
         RequestCache.clear_request_cache()
 
         to_be_wrapped = Mock()
         to_be_wrapped.side_effect = [1, 2, 3, 4, 5, 6]
         self.assertEqual(to_be_wrapped.call_count, 0)
 
-        def mock_wrapper(n):
+        def mock_wrapper(_n):
+            """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped()
 
         wrapped = request_cached(mock_wrapper)
@@ -124,7 +137,11 @@ class TestRequestCache(TestCase):
         self.assertEqual(to_be_wrapped.call_count, 3)
 
     def test_request_cached_with_changing_keyword_args(self):
-        # Keyword arguments are not considered as part of the uniqueness of a call.
+        """
+        Ensure that changing keyword arguments to a decorated call does not affect
+        pulling a cached result for it.  Keyword arguments are not currently considered
+        as being part of the fingerprint of a call's cache key.
+        """
 
         RequestCache.clear_request_cache()
 
@@ -132,7 +149,8 @@ class TestRequestCache(TestCase):
         to_be_wrapped.side_effect = [1, 2, 3, 4, 5, 6]
         self.assertEqual(to_be_wrapped.call_count, 0)
 
-        def mock_wrapper(n, foo=None):
+        def mock_wrapper(_n, _foo=None):
+            """Simple wrapper to let us decorate our mock."""
             return to_be_wrapped()
 
         wrapped = request_cached(mock_wrapper)

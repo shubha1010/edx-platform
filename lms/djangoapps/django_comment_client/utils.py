@@ -27,7 +27,7 @@ from openedx.core.djangoapps.course_groups.cohorts import (
     get_course_cohort_settings, get_cohort_by_id, get_cohort_id, is_course_cohorted
 )
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
-from request_cache.middleware import RequestCache, request_cached
+from request_cache.middleware import request_cached
 
 
 log = logging.getLogger(__name__)
