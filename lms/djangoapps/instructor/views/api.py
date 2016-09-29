@@ -2846,9 +2846,6 @@ def start_certificate_regeneration(request, course_id):
             status=400
         )
 
-    # verified users with audit passing and not passing certificate statuses.
-    if verified_with_audit_certs:
-        certificates_statuses = [CertificateStatuses.audit_passing, CertificateStatuses.audit_notpassing]
     try:
         instructor_task.api.regenerate_certificates(
             request,
