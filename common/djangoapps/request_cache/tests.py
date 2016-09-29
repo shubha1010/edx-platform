@@ -4,8 +4,10 @@ Tests for the request cache.
 from celery.task import task
 from django.conf import settings
 from django.test import TestCase
+from mock import Mock
 
 from request_cache import get_request_or_stub
+from request_cache.middleware import RequestCache, request_cached
 from xmodule.modulestore.django import modulestore
 
 
@@ -33,3 +35,129 @@ class TestRequestCache(TestCase):
         """ Test that the request cache is cleared after a task is run. """
         self._dummy_task.apply(args=(self,)).get()
         self.assertEqual(modulestore().request_cache.data, {})
+
+    def test_request_cached_miss_and_then_hit(self):
+        RequestCache.clear_request_cache()
+
+        to_be_wrapped = Mock()
+        to_be_wrapped.return_value = 42
+        self.assertEqual(to_be_wrapped.call_count, 0)
+
+        def mock_wrapper():
+            return to_be_wrapped()
+
+        wrapped = request_cached(mock_wrapper)
+        result = wrapped()
+        self.assertEqual(result, 42)
+        self.assertEqual(to_be_wrapped.call_count, 1)
+
+        result = wrapped()
+        self.assertEqual(result, 42)
+        self.assertEqual(to_be_wrapped.call_count, 1)
+
+        to_be_wrapped.return_value = 43
+        result = wrapped()
+        self.assertEqual(result, 42)
+        self.assertEqual(to_be_wrapped.call_count, 1)
+
+    def test_request_cached_with_caches_despite_changing_wrapped_result(self):
+        RequestCache.clear_request_cache()
+
+        to_be_wrapped = Mock()
+        to_be_wrapped.side_effect = [1, 2, 3]
+        self.assertEqual(to_be_wrapped.call_count, 0)
+
+        def mock_wrapper():
+            return to_be_wrapped()
+
+        wrapped = request_cached(mock_wrapper)
+        result = wrapped()
+        self.assertEqual(result, 1)
+        self.assertEqual(to_be_wrapped.call_count, 1)
+
+        result = wrapped()
+        self.assertEqual(result, 1)
+        self.assertEqual(to_be_wrapped.call_count, 1)
+
+        direct_result = mock_wrapper()
+        self.assertEqual(direct_result, 2)
+        self.assertEqual(to_be_wrapped.call_count, 2)
+
+        result = wrapped()
+        self.assertEqual(result, 1)
+        self.assertEqual(to_be_wrapped.call_count, 2)
+
+        direct_result = mock_wrapper()
+        self.assertEqual(direct_result, 3)
+        self.assertEqual(to_be_wrapped.call_count, 3)
+
+    def test_request_cached_with_changing_args(self):
+        RequestCache.clear_request_cache()
+
+        to_be_wrapped = Mock()
+        to_be_wrapped.side_effect = [1, 2, 3, 4, 5, 6]
+        self.assertEqual(to_be_wrapped.call_count, 0)
+
+        def mock_wrapper(n):
+            return to_be_wrapped()
+
+        wrapped = request_cached(mock_wrapper)
+
+        # This will be a miss, and make an underlying call.
+        result = wrapped(1)
+        self.assertEqual(result, 1)
+        self.assertEqual(to_be_wrapped.call_count, 1)
+
+        # This will be a miss, and make an underlying call.
+        result = wrapped(2)
+        self.assertEqual(result, 2)
+        self.assertEqual(to_be_wrapped.call_count, 2)
+
+        # This is bypass of the decorator.
+        direct_result = mock_wrapper(3)
+        self.assertEqual(direct_result, 3)
+        self.assertEqual(to_be_wrapped.call_count, 3)
+
+        # This will be a hit, and not make an underlying call.
+        result = wrapped(2)
+        self.assertEqual(result, 2)
+        self.assertEqual(to_be_wrapped.call_count, 3)
+
+    def test_request_cached_with_changing_keyword_args(self):
+        # Keyword arguments are not considered as part of the uniqueness of a call.
+
+        RequestCache.clear_request_cache()
+
+        to_be_wrapped = Mock()
+        to_be_wrapped.side_effect = [1, 2, 3, 4, 5, 6]
+        self.assertEqual(to_be_wrapped.call_count, 0)
+
+        def mock_wrapper(n, foo=None):
+            return to_be_wrapped()
+
+        wrapped = request_cached(mock_wrapper)
+
+        # This will be a miss, and make an underlying call.
+        result = wrapped(1, foo=1)
+        self.assertEqual(result, 1)
+        self.assertEqual(to_be_wrapped.call_count, 1)
+
+        # This will be a miss, and make an underlying call.
+        result = wrapped(2, foo=2)
+        self.assertEqual(result, 2)
+        self.assertEqual(to_be_wrapped.call_count, 2)
+
+        # This is bypass of the decorator.
+        direct_result = mock_wrapper(3, foo=3)
+        self.assertEqual(direct_result, 3)
+        self.assertEqual(to_be_wrapped.call_count, 3)
+
+        # This will be a hit, and not make an underlying call.
+        result = wrapped(2, foo=2)
+        self.assertEqual(result, 2)
+        self.assertEqual(to_be_wrapped.call_count, 3)
+
+        # This will be a hit, and not make an underlying call, even though foo is different.
+        result = wrapped(2, foo=9)
+        self.assertEqual(result, 2)
+        self.assertEqual(to_be_wrapped.call_count, 3)

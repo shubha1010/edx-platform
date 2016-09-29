@@ -286,7 +286,11 @@ def forum_form_discussion(request, course_key):
 @use_bulk_ops
 def single_thread(request, course_key, discussion_id, thread_id):
     """
-    Renders a response to display a single discussion thread.
+    Renders a response to display a single discussion thread.  This could either be a page refresh
+    after navigating to a single thread, a direct link to a single thread, or an AJAX call from the
+    discussions UI loading the responses/comments for a single thread.
+
+    Depending on the HTTP headers, we'll adjust our response accordingly.
     """
     nr_transaction = newrelic.agent.current_transaction()
 
@@ -339,7 +343,8 @@ def single_thread(request, course_key, discussion_id, thread_id):
             'annotated_content_info': annotated_content_info,
         })
     else:
-        # We only care about providing enough context to render the view for this single thread.
+        # Since we're in page render mode, and the discussions UI will request the thread list itself,
+        # we need only return the thread information for this one.
         threads = [thread.to_dict()]
 
         with newrelic.agent.FunctionTrace(nr_transaction, "add_courseware_context"):
