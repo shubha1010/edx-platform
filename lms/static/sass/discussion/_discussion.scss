@@ -311,9 +311,12 @@ body.discussion {
   .inline-discussion-topic {
     width: flex-grid(12);
     font-size: $forum-small-font-size;
+    .inline-discussion-topic__title {
+      font-weight: bold;
+    }
   }
 
-  .discussion-module-title {
+  .discussion-module-header {
     @include float(left);
     width: flex-grid(7);
   }
@@ -347,7 +350,7 @@ body.discussion {
   font-size: $forum-base-font-size;
   text-align: center;
 
-  &.btn.btn-brand.shown {
+  &.shown {
     background-color: $btn-default-background-color;
     color: $uxpl-primary-blue;
   }

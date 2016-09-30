@@ -1085,14 +1085,8 @@ class InlineDiscussionTest(UniqueCourseTest, DiscussionResponsePaginationTestMix
             [Comment(id="comment1", user_id="other"), Comment(id="comment2", user_id=self.user_id)])
         thread_fixture.push()
         self.setup_thread_page(thread.get("id"))
-        #self.assertFalse(self.thread_page.element_exists(".new-post-btn"))
         self.assertFalse(self.thread_page.has_add_response_button())
-        self.assertFalse(self.thread_page.is_response_editable("response1"))
-        self.assertFalse(self.thread_page.is_add_comment_visible("response1"))
-        self.assertFalse(self.thread_page.is_comment_editable("comment1"))
-        self.assertFalse(self.thread_page.is_comment_editable("comment2"))
-        self.assertFalse(self.thread_page.is_comment_deletable("comment1"))
-        self.assertFalse(self.thread_page.is_comment_deletable("comment2"))
+        self.assertFalse(self.thread_page.is_element_visible("action-more"))
 
     def test_dual_discussion_xblock(self):
         """
