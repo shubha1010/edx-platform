@@ -9,6 +9,7 @@ from openedx.core.djangoapps.coursegraph.signals import _listen_for_course_publi
 from openedx.core.djangoapps.coursegraph.utils import CourseLastPublishedCache
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 
+
 class TestCourseGraphSignalHandler(CacheIsolationTestCase):
     """
     Tests for the course publish course handler

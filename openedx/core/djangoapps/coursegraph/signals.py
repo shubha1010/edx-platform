@@ -4,7 +4,7 @@ Signal handlers for the CourseGraph application
 from django.dispatch.dispatcher import receiver
 from xmodule.modulestore.django import SignalHandler
 
-from utils import CourseLastPublishedCache
+from openedx.core.djangoapps.coursegraph.utils import CourseLastPublishedCache
 
 
 @receiver(SignalHandler.course_published)

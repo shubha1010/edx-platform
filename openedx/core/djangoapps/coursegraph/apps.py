@@ -6,6 +6,7 @@ Signal handlers are connected here.
 
 from django.apps import AppConfig
 
+
 class CoursegraphConfig(AppConfig):
     """
     AppConfig for courseware app
@@ -16,4 +17,4 @@ class CoursegraphConfig(AppConfig):
         """
         Import signals on startup
         """
-        from . import signals  # pylint: disable=unused-import
+        from . import signals  # pylint: disable=unused-variable

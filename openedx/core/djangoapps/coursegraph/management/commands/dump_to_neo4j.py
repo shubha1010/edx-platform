@@ -2,7 +2,7 @@
 This file contains a management command for exporting the modulestore to
 neo4j, a graph database.
 """
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 import logging
 
@@ -39,7 +39,8 @@ class ModuleStoreSerializer(object):
     Class with functionality to serialize a modulestore into subgraphs,
     one graph per course.
     """
-    def load_course_keys(self, courses=None):
+
+    def __init__(self, courses=None):
         """
         Sets the object's course_keys attribute from the `courses` parameter.
         If that parameter isn't furnished, loads all course_keys from the
@@ -155,7 +156,6 @@ class ModuleStoreSerializer(object):
             coerced_value = six.text_type(value)
 
         return coerced_value
-
 
     @staticmethod
     def add_to_transaction(neo4j_entities, transaction):
@@ -310,8 +310,7 @@ class Command(BaseCommand):
             secure=True
         )
 
-        mss = ModuleStoreSerializer()
-        mss.load_course_keys(options['courses'])
+        mss = ModuleStoreSerializer(options['courses'])
 
         successful_courses, unsuccessful_courses = mss.dump_courses_to_neo4j(
             graph, override_cache=options['override']
@@ -324,7 +323,7 @@ class Command(BaseCommand):
         if successful_courses:
             print(
                 "These courses exported to neo4j successfully:\n\t" +
-                 "\n\t".join(successful_courses)
+                "\n\t".join(successful_courses)
             )
         else:
             print("No courses exported to neo4j successfully.")

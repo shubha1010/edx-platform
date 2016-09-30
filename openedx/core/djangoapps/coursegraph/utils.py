@@ -22,9 +22,18 @@ class TimeRecordingCacheBase(object):
         return self.cache_prefix + unicode(course_key)
 
     def get(self, course_key):
+        """
+        Gets the time value associated with the CourseKey.
+        :param course_key: a CourseKey object.
+        :return: the time the key was last set.
+        """
         return self._cache.get(self._key(course_key))
 
     def set(self, course_key):
+        """
+        Sets the current time for a CourseKey key.
+        :param course_key: a CourseKey object.
+        """
         return self._cache.set(self._key(course_key), timezone.now())
 
 
