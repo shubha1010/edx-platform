@@ -225,30 +225,32 @@ class TestTemplates(TestDiscussionXBlock):
         self.assertIn('data-discussion-id="{}"'.format(self.discussion_id), fragment.content)
 
     @ddt.data(
+        (True, True, True),
+        (True, True, False),
         (True, False, False),
+        (False, True, True),
         (False, True, False),
         (False, False, True),
+        (False, False, False),
     )
-    def test_student_perms_are_correct(self, permissions):
+    @ddt.unpack
+    def test_student_perms_are_correct(self, can_create_thread, can_create_comment, can_create_sub_comment):
         """
         Test for lms view.
         """
         permission_dict = {
-            'create_thread': permissions[0],
-            'create_comment': permissions[1],
-            'create_sub_comment': permissions[2]
+            'create_thread': can_create_thread,
+            'create_comment': can_create_comment,
+            'create_sub_comment': can_create_sub_comment
         }
 
         self.block.has_permission = lambda perm: permission_dict[perm]
         fragment = self.block.student_view()
-
+        read_only = 'false' if can_create_thread else 'true'
         self.assertIn('data-discussion-id="{}"'.format(self.discussion_id), fragment.content)
-        self.assertIn('data-user-create-comment="{}"'.format(json.dumps(permissions[1])), fragment.content)
-        self.assertIn('data-user-create-subcomment="{}"'.format(json.dumps(permissions[2])), fragment.content)
-        if permissions[0]:
-            self.assertNotIn("is-hidden", fragment.content)
-        else:
-            self.assertIn("is-hidden", fragment.content)
+        self.assertIn('data-user-create-comment="{}"'.format(json.dumps(can_create_comment)), fragment.content)
+        self.assertIn('data-user-create-subcomment="{}"'.format(json.dumps(can_create_sub_comment)), fragment.content)
+        self.assertIn('data-read-only="{read_only}"'.format(read_only=read_only), fragment.content)
 
 
 @ddt.ddt
