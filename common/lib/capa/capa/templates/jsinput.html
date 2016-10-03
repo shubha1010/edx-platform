@@ -42,8 +42,11 @@
     <p id="answer_${id}" class="answer"></p>
 
     <p class="status">
-        <span class="sr">${status.display_name}</span>
-        <%include file="status_icon.html" args="status=status"/>
+      <%include file="status_span.html" args="status=status,
+        sr_text=status.display_name,
+        classname=status.classname,
+        aria_db='',
+        status_id=id"/>
     </p>
 
     <div class="error_message" style="padding: 5px 5px 5px 5px; background-color:#FA6666; height:60px;width:400px; display: none"></div>

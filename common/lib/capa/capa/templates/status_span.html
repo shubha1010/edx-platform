@@ -1,0 +1,7 @@
+<%page expression_filter="h" args="status, sr_text, classname, aria_db, status_id"/>
+<span class="status ${classname}"
+      id="status_${status_id}" aria-describedby="${aria_db}"
+      data-tooltip="${status.display_tooltip}">
+  <span class="sr">${sr_text}</span>
+  <span class="status-icon" aria-hidden="true"></span>
+</span>
