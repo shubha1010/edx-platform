@@ -447,16 +447,16 @@ class @MarkdownEditingDescriptor extends XModule.Descriptor
                   firstAnswer = values[0];
                   firstAnswer = firstAnswer.replace(/^\=\s*/, '');
 
-                  // if answer is not numerical
-                  if (isNaN(parseFloat(firstAnswer)) && !isRangeToleranceCase(firstAnswer)) {
-                      return false;
-                  }
-
                   var textHint = extractHint(firstAnswer);
                   var hintLine = '';
                   if (textHint.hint) {
                     firstAnswer = textHint.nothint;
                     hintLine = '  <correcthint' + textHint.labelassign + '>' + textHint.hint + '</correcthint>\n'
+                  }
+
+                  // if answer is not numerical
+                  if (isNaN(parseFloat(firstAnswer)) && !isRangeToleranceCase(firstAnswer)) {
+                      return false;
                   }
 
                   // Tries to extract parameters from string like 'expr +- tolerance'
