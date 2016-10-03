@@ -3,10 +3,12 @@ Tests for contentstore.views.preview.py
 """
 import re
 import ddt
-from mock import Mock
+import mock
+from mock import Mock, patch
 from xblock.core import XBlock
 
-from django.test.client import RequestFactory
+from django.conf import settings
+from django.test.client import Client, RequestFactory
 
 from xblock.core import XBlockAside
 from student.tests.factories import UserFactory
@@ -15,10 +17,12 @@ from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from contentstore.views.preview import get_preview_fragment, _preview_module_system
+from contentstore.utils import reverse_usage_url
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.test_asides import AsideTestType
 from xblock_config.models import StudioConfig
 from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.xml_importer import import_course_from_xml
 
 
 class GetPreviewHtmlTestCase(ModuleStoreTestCase):
@@ -105,6 +109,38 @@ class GetPreviewHtmlTestCase(ModuleStoreTestCase):
         self.assertNotRegexpMatches(html, r"data-block-type=[\"\']test_aside[\"\']")
         self.assertNotRegexpMatches(html, "Aside rendered")
 
+    @mock.patch('xmodule.conditional_module.ConditionalModule.is_condition_satisfied')
+    def test_preview_conditional_module_children_context(self, mock_is_condition_satisfied):
+        """
+        Testst that when empty context is pass to children of ConditionalModule it will not raise KeyError.
+        """
+        mock_is_condition_satisfied.return_value = True
+        self.user = UserFactory.create(username="testuser1", password='foo', is_staff=True, is_superuser=True)
+        self.client = Client()
+        self.client.login(username=self.user.username, password='foo')
+
+        with modulestore().default_store(ModuleStoreEnum.Type.split):
+            module_store = modulestore()
+            course_id = module_store.make_course_key('HarvardX', 'ER22x', '2013_Spring')
+            import_course_from_xml(
+                module_store,
+                self.user.id,
+                settings.COMMON_TEST_DATA_ROOT,
+                ['conditional_and_poll'],
+                target_id=course_id,
+                create_if_not_present=True
+            )
+
+            course = module_store.get_course(course_id)
+            self.assertIsNotNone(course)
+            conditional_block = module_store.get_item(course.id.make_usage_key('conditional', 'condone'))
+            url = reverse_usage_url(
+                'preview_handler',
+                conditional_block.location,
+                kwargs={'handler': 'xmodule_handler/conditional_get'}
+            )
+            response = self.client.post(url)
+            self.assertEqual(response.status_code, 200)
 
 @XBlock.needs("field-data")
 @XBlock.needs("i18n")
