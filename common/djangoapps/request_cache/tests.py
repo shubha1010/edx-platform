@@ -46,9 +46,9 @@ class TestRequestCache(TestCase):
         to_be_wrapped.return_value = 42
         self.assertEqual(to_be_wrapped.call_count, 0)
 
-        def mock_wrapper():
+        def mock_wrapper(*args, **kwargs):
             """Simple wrapper to let us decorate our mock."""
-            return to_be_wrapped()
+            return to_be_wrapped(*args, **kwargs)
 
         wrapped = request_cached(mock_wrapper)
         result = wrapped()
@@ -74,9 +74,9 @@ class TestRequestCache(TestCase):
         to_be_wrapped.side_effect = [1, 2, 3]
         self.assertEqual(to_be_wrapped.call_count, 0)
 
-        def mock_wrapper():
+        def mock_wrapper(*args, **kwargs):
             """Simple wrapper to let us decorate our mock."""
-            return to_be_wrapped()
+            return to_be_wrapped(*args, **kwargs)
 
         wrapped = request_cached(mock_wrapper)
         result = wrapped()
@@ -110,9 +110,9 @@ class TestRequestCache(TestCase):
         to_be_wrapped.side_effect = [1, 2, 3, 4, 5, 6]
         self.assertEqual(to_be_wrapped.call_count, 0)
 
-        def mock_wrapper(_n):
+        def mock_wrapper(*args, **kwargs):
             """Simple wrapper to let us decorate our mock."""
-            return to_be_wrapped()
+            return to_be_wrapped(*args, **kwargs)
 
         wrapped = request_cached(mock_wrapper)
 
@@ -142,16 +142,15 @@ class TestRequestCache(TestCase):
         pulling a cached result for it.  Keyword arguments are not currently considered
         as being part of the fingerprint of a call's cache key.
         """
-
         RequestCache.clear_request_cache()
 
         to_be_wrapped = Mock()
         to_be_wrapped.side_effect = [1, 2, 3, 4, 5, 6]
         self.assertEqual(to_be_wrapped.call_count, 0)
 
-        def mock_wrapper(_n, _foo=None):
+        def mock_wrapper(*args, **kwargs):
             """Simple wrapper to let us decorate our mock."""
-            return to_be_wrapped()
+            return to_be_wrapped(*args, **kwargs)
 
         wrapped = request_cached(mock_wrapper)
 

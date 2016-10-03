@@ -438,6 +438,10 @@ class DiscussionTabMultipleThreadTest(BaseDiscussionTestCase):
         """
         Check switching between threads changes the page focus
         """
+
+        # make sure the thread list is loaded
+        self.thread_page_1.wait_for_ajax()
+
         # verify threads are rendered on the page
         self.assertTrue(
             self.thread_page_1.check_threads_rendered_successfully(thread_count=self.thread_count)
