@@ -53,7 +53,6 @@
                     <%include file="status_span.html" args="status=status,
                       sr_text=status.display_name,
                       classname=status.classname if show_correctness != 'never' else 'unanswered',
-                      aria_db=id + '-legend',
                       status_id=id"/>
                   % endif
                 % endif
@@ -65,9 +64,8 @@
     <div class="indicator-container">
         % if input_type == 'checkbox' or not value:
             <%include file="status_span.html" args="status=status,
-              sr_text=status.display_tooltip,
+              sr_text=status.display_name,
               classname=status.classname if show_correctness != 'never' else 'unanswered',
-              aria_db=id + '-legend',
               status_id=id"/>
         % endif
     </div>
