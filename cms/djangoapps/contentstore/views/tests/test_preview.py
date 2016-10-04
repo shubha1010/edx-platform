@@ -4,7 +4,6 @@ Tests for contentstore.views.preview.py
 import re
 import ddt
 import mock
-from mock import Mock, patch
 from xblock.core import XBlock
 
 from django.conf import settings
@@ -115,8 +114,8 @@ class GetPreviewHtmlTestCase(ModuleStoreTestCase):
         Testst that when empty context is pass to children of ConditionalModule it will not raise KeyError.
         """
         mock_is_condition_satisfied.return_value = True
-        self.client = Client()
-        self.client.login(username=self.user.username, password=self.user_password)
+        client = Client()
+        client.login(username=self.user.username, password=self.user_password)
 
         with self.store.default_store(ModuleStoreEnum.Type.split):
             course_id = self.store.make_course_key('HarvardX', 'ER22x', '2013_Spring')
@@ -137,7 +136,7 @@ class GetPreviewHtmlTestCase(ModuleStoreTestCase):
                 conditional_block.location,
                 kwargs={'handler': 'xmodule_handler/conditional_get'}
             )
-            response = self.client.post(url)
+            response = client.post(url)
             self.assertEqual(response.status_code, 200)
 
 
@@ -163,8 +162,8 @@ class StudioXBlockServiceBindingTest(ModuleStoreTestCase):
         super(StudioXBlockServiceBindingTest, self).setUp()
         self.user = UserFactory()
         self.course = CourseFactory.create()
-        self.request = Mock()
-        self.field_data = Mock()
+        self.request = mock.Mock()
+        self.field_data = mock.Mock()
 
     @XBlock.register_temp_plugin(PureXBlock, identifier='pure')
     @ddt.data("user", "i18n", "field-data")
