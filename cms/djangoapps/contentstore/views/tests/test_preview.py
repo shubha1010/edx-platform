@@ -115,15 +115,13 @@ class GetPreviewHtmlTestCase(ModuleStoreTestCase):
         Testst that when empty context is pass to children of ConditionalModule it will not raise KeyError.
         """
         mock_is_condition_satisfied.return_value = True
-        self.user = UserFactory.create(username="testuser1", password='foo', is_staff=True, is_superuser=True)
         self.client = Client()
-        self.client.login(username=self.user.username, password='foo')
+        self.client.login(username=self.user.username, password=self.user_password)
 
-        with modulestore().default_store(ModuleStoreEnum.Type.split):
-            module_store = modulestore()
-            course_id = module_store.make_course_key('HarvardX', 'ER22x', '2013_Spring')
+        with self.store.default_store(ModuleStoreEnum.Type.split):
+            course_id = self.store.make_course_key('HarvardX', 'ER22x', '2013_Spring')
             import_course_from_xml(
-                module_store,
+                self.store,
                 self.user.id,
                 settings.COMMON_TEST_DATA_ROOT,
                 ['conditional_and_poll'],
@@ -131,9 +129,9 @@ class GetPreviewHtmlTestCase(ModuleStoreTestCase):
                 create_if_not_present=True
             )
 
-            course = module_store.get_course(course_id)
+            course = self.store.get_course(course_id)
             self.assertIsNotNone(course)
-            conditional_block = module_store.get_item(course.id.make_usage_key('conditional', 'condone'))
+            conditional_block = self.store.get_item(course.id.make_usage_key('conditional', 'condone'))
             url = reverse_usage_url(
                 'preview_handler',
                 conditional_block.location,
