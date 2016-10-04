@@ -2828,6 +2828,15 @@ def start_certificate_regeneration(request, course_id):
             certificates_statuses.index('verified_users_with_audit_certs')
         )
 
+    if verified_with_audit_certs and certificates_statuses:
+        return JsonResponse(
+            {'message': _(
+                "Please do not select 'verified learners with audit certificates' "
+                "along with other certificate statuses."
+            )},
+            status=400
+        )
+
     if not (certificates_statuses or verified_with_audit_certs):
         return JsonResponse(
             {'message': _('Please select one or more certificate statuses that require certificate regeneration.')},
@@ -2845,6 +2854,9 @@ def start_certificate_regeneration(request, course_id):
             {'message': _('Please select certificate statuses from the list only.')},
             status=400
         )
+
+    if verified_with_audit_certs:
+        certificates_statuses = [CertificateStatuses.audit_passing, CertificateStatuses.audit_notpassing]
 
     try:
         instructor_task.api.regenerate_certificates(

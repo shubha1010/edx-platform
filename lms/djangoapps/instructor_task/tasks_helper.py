@@ -1430,6 +1430,12 @@ def generate_students_certificates(
         specific_student_id = task_input.get('specific_student_id')
         students_to_generate_certs_for = students_to_generate_certs_for.filter(id=specific_student_id)
 
+    elif student_set == 'verified_users_with_audit_certs':
+        students_to_generate_certs_for = CourseEnrollment.objects.users_enrolled_in(
+            course_id,
+            mode=CourseMode.VERIFIED
+        )
+
     task_progress = TaskProgress(action_name, students_to_generate_certs_for.count(), start_time)
 
     current_step = {'step': 'Calculating students already have certificates'}
@@ -1443,26 +1449,6 @@ def generate_students_certificates(
         students_require_certs = students_require_certificate(
             course_id, students_to_generate_certs_for, statuses_to_regenerate
         )
-
-    if student_set == 'verified_users_with_audit_certs':
-        verified_students = CourseEnrollment.objects.users_enrolled_in(
-            course_id,
-            mode=CourseMode.VERIFIED
-        )
-        audit_statuses = [CertificateStatuses.audit_passing, CertificateStatuses.audit_notpassing]
-        verified_students_with_audit_certs = verified_students.filter(
-            generatedcertificate__course_id=course_id,
-            generatedcertificate__status__in=audit_statuses
-        )
-        if statuses_to_regenerate:
-            students_require_certs = list(
-                set(students_require_certs).union(set(verified_students_with_audit_certs))
-            )
-        else:
-            students_require_certs = list(verified_students_with_audit_certs)
-
-        # Mark existing generated certificates as 'unavailable' for verified users with audit certs.
-        invalidate_generated_certificates(course_id, verified_students, audit_statuses)
 
     if statuses_to_regenerate:
         # Mark existing generated certificates as 'unavailable' before regenerating
