@@ -2,7 +2,6 @@
 Tests for the views
 """
 from datetime import datetime
-
 import ddt
 from django.core.urlresolvers import reverse
 from mock import patch
@@ -11,8 +10,12 @@ from pytz import UTC
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from edx_oauth2_provider.tests.factories import AccessTokenFactory, ClientFactory
+from lms.djangoapps.courseware.tests.factories import GlobalStaffFactory, StaffFactory
 from lms.djangoapps.grades.tests.utils import mock_get_score
 from student.tests.factories import CourseEnrollmentFactory, UserFactory
+from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase, TEST_DATA_SPLIT_MODULESTORE
 
@@ -184,8 +187,10 @@ class CurrentGradeViewTest(SharedModuleStoreTestCase, APITestCase):
         def mock_from_string(*args, **kwargs):  # pylint: disable=unused-argument
             """Mocked function to always raise an exception"""
             raise InvalidKeyError('foo', 'bar')
+
         with patch('opaque_keys.edx.keys.CourseKey.from_string', side_effect=mock_from_string):
             resp = self.client.get(self.get_url(self.student.username))
+
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn('error_code', resp.data)  # pylint: disable=no-member
         self.assertEqual(
@@ -245,3 +250,228 @@ class CurrentGradeViewTest(SharedModuleStoreTestCase, APITestCase):
         }
         expected_data.update(result)
         self.assertEqual(resp.data, [expected_data])  # pylint: disable=no-member
+
+
+class GradingPolicyTestMixin(object):
+    """
+    Mixin class for Grading Policy tests
+    """
+    view = None
+
+    def setUp(self):
+        super(GradingPolicyTestMixin, self).setUp()
+        self.create_user_and_access_token()
+
+    def create_user_and_access_token(self):
+        # pylint: disable=missing-docstring
+        self.user = GlobalStaffFactory.create()
+        self.oauth_client = ClientFactory.create()
+        self.access_token = AccessTokenFactory.create(user=self.user, client=self.oauth_client).token
+
+    @classmethod
+    def create_course_data(cls):
+        # pylint: disable=missing-docstring
+        cls.invalid_course_id = 'foo/bar/baz'
+        cls.course = CourseFactory.create(display_name='An Introduction to API Testing', raw_grader=cls.raw_grader)
+        cls.course_id = unicode(cls.course.id)
+        with cls.store.bulk_operations(cls.course.id, emit_signals=False):
+            cls.sequential = ItemFactory.create(
+                category="sequential",
+                parent_location=cls.course.location,
+                display_name="Lesson 1",
+                format="Homework",
+                graded=True
+            )
+
+            factory = MultipleChoiceResponseXMLFactory()
+            args = {'choices': [False, True, False]}
+            problem_xml = factory.build_xml(**args)
+            cls.problem = ItemFactory.create(
+                category="problem",
+                parent_location=cls.sequential.location,
+                display_name="Problem 1",
+                format="Homework",
+                data=problem_xml,
+            )
+
+            cls.video = ItemFactory.create(
+                category="video",
+                parent_location=cls.sequential.location,
+                display_name="Video 1",
+            )
+
+            cls.html = ItemFactory.create(
+                category="html",
+                parent_location=cls.sequential.location,
+                display_name="HTML 1",
+            )
+
+        cls.empty_course = CourseFactory.create(
+            start=datetime(2014, 6, 16, 14, 30),
+            end=datetime(2015, 1, 16),
+            org="MTD",
+            # Use mongo so that we can get a test with a SlashSeparatedCourseKey
+            default_store=ModuleStoreEnum.Type.mongo
+        )
+
+    def http_get(self, uri, **headers):
+        """
+        Submit an HTTP GET request
+        """
+
+        default_headers = {
+            'HTTP_AUTHORIZATION': 'Bearer ' + self.access_token
+        }
+        default_headers.update(headers)
+
+        response = self.client.get(uri, follow=True, **default_headers)
+        return response
+
+    def http_get_for_course(self, course_id=None, **headers):
+        """
+        Submit an HTTP GET request to the view for the given course
+        """
+
+        return self.http_get(
+            reverse(self.view, kwargs={'course_id': course_id or self.course_id}),
+            **headers
+        )
+
+    def test_get_invalid_course(self):
+        """
+        The view should return a 404 if the course ID is invalid.
+        """
+        response = self.http_get_for_course(self.invalid_course_id)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get(self):
+        """
+        The view should return a 200 if the course ID is valid.
+        """
+        response = self.http_get_for_course()
+        self.assertEqual(response.status_code, 200)
+
+        # Return the response so child classes do not have to repeat the request.
+        return response
+
+    def test_not_authenticated(self):
+        """ The view should return HTTP status 401 if no user is authenticated. """
+        # HTTP 401 should be returned if the user is not authenticated.
+        response = self.http_get_for_course(HTTP_AUTHORIZATION=None)
+        self.assertEqual(response.status_code, 401)
+
+    def test_not_authorized(self):
+        user = StaffFactory(course_key=self.course.id)
+        access_token = AccessTokenFactory.create(user=user, client=self.oauth_client).token
+        auth_header = 'Bearer ' + access_token
+
+        # Access should be granted if the proper access token is supplied.
+        response = self.http_get_for_course(HTTP_AUTHORIZATION=auth_header)
+        self.assertEqual(response.status_code, 200)
+
+        # Access should be denied if the user is not course staff.
+        response = self.http_get_for_course(course_id=unicode(self.empty_course.id), HTTP_AUTHORIZATION=auth_header)
+        self.assertEqual(response.status_code, 404)
+
+
+class CourseGradingPolicyTests(GradingPolicyTestMixin, SharedModuleStoreTestCase):
+    """
+    Tests for CourseGradingPolicy view.
+    """
+    view = 'grades_api:course_grading_policy'
+
+    raw_grader = [
+        {
+            "min_count": 24,
+            "weight": 0.2,
+            "type": "Homework",
+            "drop_count": 0,
+            "short_label": "HW"
+        },
+        {
+            "min_count": 4,
+            "weight": 0.8,
+            "type": "Exam",
+            "drop_count": 0,
+            "short_label": "Exam"
+        }
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        super(CourseGradingPolicyTests, cls).setUpClass()
+        cls.create_course_data()
+
+    def test_get(self):
+        """
+        The view should return grading policy for a course.
+        """
+        response = super(CourseGradingPolicyTests, self).test_get()
+
+        expected = [
+            {
+                "count": 24,
+                "weight": 0.2,
+                "assignment_type": "Homework",
+                "dropped": 0
+            },
+            {
+                "count": 4,
+                "weight": 0.8,
+                "assignment_type": "Exam",
+                "dropped": 0
+            }
+        ]
+        self.assertListEqual(response.data, expected)
+
+
+class CourseGradingPolicyMissingFieldsTests(GradingPolicyTestMixin, SharedModuleStoreTestCase):
+    """
+    Tests for CourseGradingPolicy view when fields are missing.
+    """
+    view = 'grades_api:course_grading_policy'
+
+    # Raw grader with missing keys
+    raw_grader = [
+        {
+            "min_count": 24,
+            "weight": 0.2,
+            "type": "Homework",
+            "drop_count": 0,
+            "short_label": "HW"
+        },
+        {
+            # Deleted "min_count" key
+            "weight": 0.8,
+            "type": "Exam",
+            "drop_count": 0,
+            "short_label": "Exam"
+        }
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        super(CourseGradingPolicyMissingFieldsTests, cls).setUpClass()
+        cls.create_course_data()
+
+    def test_get(self):
+        """
+        The view should return grading policy for a course.
+        """
+        response = super(CourseGradingPolicyMissingFieldsTests, self).test_get()
+
+        expected = [
+            {
+                "count": 24,
+                "weight": 0.2,
+                "assignment_type": "Homework",
+                "dropped": 0
+            },
+            {
+                "count": None,
+                "weight": 0.8,
+                "assignment_type": "Exam",
+                "dropped": 0
+            }
+        ]
+        self.assertListEqual(response.data, expected)
