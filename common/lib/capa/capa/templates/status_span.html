@@ -1,5 +1,5 @@
-<%page expression_filter="h" args="status, sr_text, classname, status_id"/>
+<%page expression_filter="h" args="status, classname, status_id"/>
 <span class="status ${classname}" id="status_${status_id}" data-tooltip="${status.display_tooltip}">
-  <span class="sr">${sr_text}</span>
+  <span class="sr">${status.display_name}</span>
   <span class="status-icon" aria-hidden="true"></span>
 </span>
