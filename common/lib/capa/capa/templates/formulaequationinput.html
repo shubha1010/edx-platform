@@ -2,7 +2,7 @@
 <%! from openedx.core.djangolib.markup import HTML %>
 <% doinline = 'style="display:inline-block;vertical-align:top"' if inline else "" %>
 <div id="formulaequationinput_${id}" class="inputtype formulaequationinput" ${doinline | n, decode.utf8}>
-    <div class="${status.classname}" id="status_${id}">
+    <div class="${status.classname}" id="problem_status_${id}">
       % if response_data['label']:
           <label class="problem-group-label" for="input_${id}" id="label_${id}">${response_data['label']}</label>
       % endif

@@ -331,6 +331,9 @@ class InputTypeBase(object):
             context.update(
                 {'describedby_html': 'aria-describedby="{}"'.format(description_ids)}
             )
+        context.update(
+            {'describedby_html': 'aria-describedby="{}"'.format('status_' + self.input_id)}
+        )
 
         context.update(
             (a, v) for (a, v) in self.loaded_attributes.iteritems() if a in self.to_render
