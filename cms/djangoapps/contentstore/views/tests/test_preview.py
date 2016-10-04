@@ -142,6 +142,7 @@ class GetPreviewHtmlTestCase(ModuleStoreTestCase):
             response = self.client.post(url)
             self.assertEqual(response.status_code, 200)
 
+
 @XBlock.needs("field-data")
 @XBlock.needs("i18n")
 @XBlock.needs("user")
