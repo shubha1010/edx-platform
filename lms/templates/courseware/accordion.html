@@ -99,6 +99,6 @@ else:
 
 % if toc:
     <%static:require_module_async module_name="js/date-util-iterator" class_name="DateUtilIterator">
-        DateUtilIterator();
+        DateUtilIterator.transform(iterationKey='.localized-datetime');
     </%static:require_module_async>
 % endif

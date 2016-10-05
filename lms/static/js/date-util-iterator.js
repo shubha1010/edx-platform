@@ -1,17 +1,15 @@
 
 /**
  *
- * A helper function to utilize DateUtils quickly in iterative display templates
+ * A helper function to utilize DateUtils quickly in iterative display templates.
  *
- * @param: {string} data-datetime pre-localized date, in UTC
- * @param: {string} data-time_zone (optional) user-set timezone preference.
+ * @param: {string} data-datetime A pre-localized datetime string, assumed to be in UTC.
+ * @param: {string} data-timezone (optional) A user-set timezone preference.
  * @param: {string} lang The user's preferred language.
  * @param: {object} data-format (optional) a format constant as defined in DataUtil.dateFormatEnum.
  *
- * @param: {string} data-string (optional) ugettext-able string
- *
- * Localized according to preferences first, local data second.
- * Default to UTC/en-US Display if error/unknown.
+ * @param: {string} data-string (optional) a string for parsing through StringUtils after localizing
+ * datetime
  *
  * @return: {string} a user-time, localized, formatted datetime string
  *
@@ -24,52 +22,78 @@
         'jquery',
         'edx-ui-toolkit/js/utils/date-utils',
         'edx-ui-toolkit/js/utils/string-utils'
-    ], function(
-        $,
-        DateUtils,
-        StringUtils
-    ) {
-        return function() {
-            var displayTime;
-            var displayString;
+    ], function($, DateUtils, StringUtils) {
+    //     return function() {
+        var DateUtilIterator;
+        var localizedTime;
+        var stringHandler;
+        var displayDatetime;
+        var isValid;
+        var transform;
+
+        transform = function(iterationKey) {
             var context;
 
-            $('.localized-datetime').each(function() {
-                if ($(this).data('datetime') !== 'None' && $(this).data('datetime') !== undefined) {
+            $(iterationKey).each(function() {
+                if (isValid($(this).data('datetime'))) {
                     context = {
                         datetime: $(this).data('datetime'),
                         timezone: $(this).data('timezone'),
                         language: $(this).attr('lang'),
                         format: $(this).data('format')
                     };
-                    displayTime = DateUtils.localize(context);
-                    if ($(this).data('string') !== undefined && $(this).data('string').length > 0) {
-                        displayString = StringUtils.interpolate(
-                            '{string} {date}',
-                            {
-                                string: $(this).data('string'),
-                                date: displayTime
-                            }
-                        );
-                    } else {
-                        displayString = displayTime;
-                    }
-
+                    displayDatetime = stringHandler(
+                        localizedTime(context),
+                        $(this).data('string')
+                    );
                     /*
                     to show the prototype in action, check the console
                     */
                     /* eslint-disable no-alert, no-console */
-                    console.log(displayString);
+                    console.log(displayDatetime);
                     /* eslint-enable no-alert, no-console */
 
                     /*
-                     uncomment out the following line once approved
+                     uncomment the following line once approved
                      */
                     // $(this).text(displayString);
-                    // }
                 }
-            });
+            })
         };
+
+        localizedTime = function(context) {
+            return DateUtils.localize(context);
+        };
+
+        stringHandler = function(localTimeString, sidecarString) {
+            var returnString;
+            if (isValid(sidecarString)) {
+                returnString = StringUtils.interpolate(
+                    '{string} {date}',
+                    {
+                        string: sidecarString,
+                        date: localTimeString
+                    }
+                );
+            } else {
+                returnString = localTimeString;
+            }
+            return returnString;
+        };
+
+        isValid = function(candidateVariable) {
+            return candidateVariable !== undefined
+                && candidateVariable !== ''
+                && candidateVariable !== 'Invalid date'
+                && candidateVariable !== 'None';
+        };
+        DateUtilIterator = {
+            transform: transform,
+            localizedTime: localizedTime,
+            stringHandler: stringHandler
+        };
+        return DateUtilIterator;
+
     });
 }).call(this, define || RequireJS.define);
 
