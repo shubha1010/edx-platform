@@ -79,7 +79,6 @@ class TestCourseGradeFactory(GradeTestBase):
     Test that CourseGrades are calculated properly
     """
 
-    @patch.dict(settings.FEATURES, {'PERSISTENT_GRADES_ENABLED_FOR_ALL_TESTS': False})
     @ddt.data(
         (True, True),
         (True, False),
@@ -88,17 +87,18 @@ class TestCourseGradeFactory(GradeTestBase):
     )
     @ddt.unpack
     def test_course_grade_feature_gating(self, feature_flag, course_setting):
-        # Grades are only saved if the feature flag and the advanced setting are
-        # both set to True.
-        grade_factory = CourseGradeFactory(self.request.user)
-        with persistent_grades_feature_flags(
-            global_flag=feature_flag,
-            enabled_for_all_courses=False,
-            course_id=self.course.id,
-            enabled_for_course=course_setting
-        ):
+        with patch.dict(settings.FEATURES, {'PERSISTENT_GRADES_ENABLED_FOR_ALL_TESTS': False}):
+            # Grades are only saved if the feature flag and the advanced setting are
+            # both set to True.
+            grade_factory = CourseGradeFactory(self.request.user)
             with patch('lms.djangoapps.grades.new.course_grade._pretend_to_save_course_grades') as mock_save_grades:
-                grade_factory.create(self.course)
+                with persistent_grades_feature_flags(
+                    global_flag=feature_flag,
+                    enabled_for_all_courses=False,
+                    course_id=self.course.id,
+                    enabled_for_course=course_setting
+                ):
+                    grade_factory.create(self.course)
         self.assertEqual(mock_save_grades.called, feature_flag and course_setting)
 
 
@@ -164,7 +164,6 @@ class SubsectionGradeFactoryTest(GradeTestBase):
                     log_mock.warning.call_args_list[0].startswith("Persistent Grades: Persistence Error, falling back.")
                 )
 
-    @patch.dict(settings.FEATURES, {'PERSISTENT_GRADES_ENABLED_FOR_ALL_TESTS': False})
     @ddt.data(
         (True, True),
         (True, False),
@@ -175,16 +174,18 @@ class SubsectionGradeFactoryTest(GradeTestBase):
     def test_subsection_grade_feature_gating(self, feature_flag, course_setting):
         # Grades are only saved if the feature flag and the advanced setting are
         # both set to True.
-        with patch(
-            'lms.djangoapps.grades.models.PersistentSubsectionGrade.bulk_read_grades'
-        ) as mock_read_saved_grade:
-            with persistent_grades_feature_flags(
-                global_flag=feature_flag,
-                enabled_for_all_courses=False,
-                course_id=self.course.id,
-                enabled_for_course=course_setting
-            ):
-                self.subsection_grade_factory.create(self.sequence)
+
+        with patch.dict(settings.FEATURES, {'PERSISTENT_GRADES_ENABLED_FOR_ALL_TESTS': False}):
+            with patch(
+                'lms.djangoapps.grades.models.PersistentSubsectionGrade.bulk_read_grades'
+            ) as mock_read_saved_grade:
+                with persistent_grades_feature_flags(
+                    global_flag=feature_flag,
+                    enabled_for_all_courses=False,
+                    course_id=self.course.id,
+                    enabled_for_course=course_setting
+                ):
+                    self.subsection_grade_factory.create(self.sequence)
         self.assertEqual(mock_read_saved_grade.called, feature_flag and course_setting)
 
 
