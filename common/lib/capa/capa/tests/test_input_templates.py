@@ -4,13 +4,11 @@ Tests for the logic in input type mako templates.
 
 from collections import OrderedDict
 import unittest
-import capa
-import os.path
 import json
 from lxml import etree
-from mako.template import Template as MakoTemplate
 from mako import exceptions
 from capa.inputtypes import Status
+from capa.tests.helpers import capa_render_template
 from xmodule.stringify import stringify_children
 
 
@@ -23,7 +21,7 @@ class TemplateError(Exception):
 
 class TemplateTestCase(unittest.TestCase):
     """
-    Utilitites for testing templates.
+    Utilities for testing templates.
     """
 
     # Subclasses override this to specify the file name of the template
@@ -49,13 +47,6 @@ class TemplateTestCase(unittest.TestCase):
         Load the template under test.
         """
         super(TemplateTestCase, self).setUp()
-        capa_path = capa.__path__[0]
-        self.template_path = os.path.join(capa_path,
-                                          'templates',
-                                          self.TEMPLATE_NAME)
-        with open(self.template_path) as f:
-            self.template = MakoTemplate(f.read(), default_filters=['decode.utf8'])
-
         self.context = {}
 
     def render_to_xml(self, context_dict):
@@ -66,7 +57,7 @@ class TemplateTestCase(unittest.TestCase):
         # add dummy STATIC_URL to template context
         context_dict.setdefault("STATIC_URL", "/dummy-static/")
         try:
-            xml_str = self.template.render_unicode(**context_dict)
+            xml_str = capa_render_template(self.TEMPLATE_NAME, context_dict)
         except:
             raise TemplateError(exceptions.text_error_template().render())
 
