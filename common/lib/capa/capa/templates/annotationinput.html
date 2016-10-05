@@ -41,6 +41,13 @@
                     status_id=id"/>
                 </span>
                 % endif
+                % elif all([c == 'incorrect' for c in option['choice'], status]):
+                <span class="tag-status unanswered" aria-describedby="input_${id}_comment">
+                    <%include file="status_span.html" args="status=status,
+                    classname=status.classname,
+                    status_id=id"/>
+                </span>
+                % endif
             % endif
 
             <span class="tag
