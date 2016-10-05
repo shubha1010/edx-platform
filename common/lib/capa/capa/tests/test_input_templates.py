@@ -44,7 +44,7 @@ class TemplateTestCase(unittest.TestCase):
 
     def setUp(self):
         """
-        Load the template under test.
+        Initialize the context.
         """
         super(TemplateTestCase, self).setUp()
         self.context = {}
