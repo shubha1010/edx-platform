@@ -187,10 +187,10 @@ class TemplateTestCase(unittest.TestCase):
             # (used to by CSS to draw the green check / red x)
             self.assert_has_text(
                 xml,
-                "//span[@class=normalize-space('status {}')]/span[@class='sr']".format(
+                "//span[@class='status {}']/span[@class='sr']".format(
                     div_class if status_class else ''
                 ),
-                self.context['status'].display_tooltip
+                self.context['status'].display_name
             )
 
     def assert_label(self, xpath=None, aria_label=False):
@@ -921,7 +921,7 @@ class DragAndDropTemplateTest(TemplateTestCase):
             self.assert_has_xpath(xml, xpath, self.context)
 
             # Expect a <p> with the status
-            xpath = "//p[@class='status drag-and-drop--status']/span[@class='sr']"
+            xpath = "//span[@class='status {0}']/span[@class='sr']".format(expected_css_class)
             self.assert_has_text(xml, xpath, expected_text, exact=False)
 
     def test_drag_and_drop_json_html(self):
