@@ -26,26 +26,19 @@
                 <span class="tag-status correct" aria-describedby="input_${id}_comment">
                     <%include file="status_span.html" args="status=status,
                     classname=status.classname,
-                    status_id=id"/>
+                    status_id=''"/>
                 </span>
                 % elif all([c == 'partially-correct' for c in option['choice'], status]):
                 <span class="tag-status partially-correct" aria-describedby="input_${id}_comment">
                     <%include file="status_span.html" args="status=status,
                     classname=status.classname,
-                    status_id=id"/>
+                    status_id=''"/>
                 </span>
                 % elif all([c == 'incorrect' for c in option['choice'], status]):
                 <span class="tag-status incorrect" aria-describedby="input_${id}_comment">
                     <%include file="status_span.html" args="status=status,
                     classname=status.classname,
-                    status_id=id"/>
-                </span>
-                % endif
-                % elif all([c == 'incorrect' for c in option['choice'], status]):
-                <span class="tag-status unanswered" aria-describedby="input_${id}_comment">
-                    <%include file="status_span.html" args="status=status,
-                    classname=status.classname,
-                    status_id=id"/>
+                    status_id=''"/>
                 </span>
                 % endif
             % endif
@@ -71,6 +64,10 @@
     % else:
         <input type="hidden" class="value" name="input_${id}" id="input_${id}" value="${value|h}" />
     % endif
+
+    <%include file="status_span.html" args="status=status,
+        classname=status.classname,
+        status_id=id"/>
 
     <p id="answer_${id}" class="answer answer-annotation"></p>
 </div>
