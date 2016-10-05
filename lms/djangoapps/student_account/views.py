@@ -314,21 +314,6 @@ def _external_auth_intercept(request, mode):
         return external_auth_register(request)
 
 
-def _get_receipt_page_url(order_number):
-    """
-    Given order number, get the receipt page URL for that Order.
-
-    Args:
-        order_number (str): Order number.
-
-    Returns:
-        Receipt page URL.
-    """
-    if configuration_helpers.get_value('ENABLE_ECOMMERCE_RECEIPT_PAGE'):
-        return EcommerceService().get_receipt_page_url(order_number)
-    return CommerceConfiguration.DEFAULT_RECEIPT_PAGE_URL + order_number
-
-
 def get_user_orders(user):
     """Given a user, get the detail of all the orders from the Ecommerce service.
 
@@ -367,7 +352,7 @@ def get_user_orders(user):
                                     'order_date': strftime_localized(
                                         date_placed.replace(tzinfo=pytz.UTC), 'SHORT_DATE'
                                     ),
-                                    'receipt_url': _get_receipt_page_url(order['number'])
+                                    'receipt_url': EcommerceService().get_receipt_page_url(order['number'])
                                 }
                                 user_orders.append(order_data)
                             except KeyError:

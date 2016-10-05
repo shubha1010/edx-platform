@@ -38,13 +38,12 @@ from commerce.utils import EcommerceService
 from course_modes.models import CourseMode
 from lms.djangoapps.oauth_dispatch.tests import factories as dot_factories
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
-from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
 from openedx.core.djangoapps.user_api.accounts.api import activate_account, create_account
 from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from student.tests.factories import UserFactory
-from student_account.views import _get_receipt_page_url, account_settings_context, get_user_orders
+from student_account.views import account_settings_context, get_user_orders
 from third_party_auth.tests.testutil import simulate_running_pipeline, ThirdPartyAuthTestMixin
 from util.testing import UrlResetMixin
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -53,10 +52,6 @@ from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_t
 
 LOGGER_NAME = 'audit'
 User = get_user_model()  # pylint:disable=invalid-name
-
-TEST_SITE_CONFIGURATION = {
-    "ENABLE_ECOMMERCE_RECEIPT_PAGE": True
-}
 
 
 @ddt.ddt
@@ -685,17 +680,6 @@ class AccountSettingsViewTest(ThirdPartyAuthTestMixin, TestCase, ProgramsApiConf
             order_detail = get_user_orders(self.user)
 
         self.assertEqual(len(order_detail), 1)
-
-    def test_get_receipt_page_url_no_site_configuration(self):
-        order_number = 'ORDER1'
-        receipt_page_url = _get_receipt_page_url(order_number)
-        self.assertEqual(receipt_page_url, CommerceConfiguration.DEFAULT_RECEIPT_PAGE_URL + order_number)
-
-    @with_site_configuration(configuration=TEST_SITE_CONFIGURATION)
-    def test_get_receipt_page_url_with_site_configuration(self):
-        order_number = 'ORDER1'
-        receipt_page_url = _get_receipt_page_url(order_number)
-        self.assertEqual(receipt_page_url, EcommerceService().get_receipt_page_url(order_number))
 
 
 @override_settings(SITE_NAME=settings.MICROSITE_LOGISTRATION_HOSTNAME)
