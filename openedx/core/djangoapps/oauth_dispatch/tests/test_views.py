@@ -143,6 +143,7 @@ class TestAccessTokenExchangeView(ThirdPartyOAuthTestMixinGoogle, ThirdPartyOAut
         self.assertEqual(response.status_code, 200)
 
 
+# pylint: disable=abstract-method
 @ddt.ddt
 class TestAuthorizationView(_DispatchingViewTestCase):
     """
