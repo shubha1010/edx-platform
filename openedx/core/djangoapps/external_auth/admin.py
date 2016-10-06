@@ -2,7 +2,7 @@
 django admin pages for courseware model
 '''
 
-from external_auth.models import *
+from openedx.core.djangoapps.external_auth.models import *
 from ratelimitbackend import admin
 
 

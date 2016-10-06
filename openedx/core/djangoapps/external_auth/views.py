@@ -9,8 +9,8 @@ import unicodedata
 import urllib
 
 from textwrap import dedent
-from external_auth.models import ExternalAuthMap
-from external_auth.djangostore import DjangoOpenIDStore
+from openedx.core.djangoapps.external_auth.models import ExternalAuthMap
+from openedx.core.djangoapps.external_auth.djangostore import DjangoOpenIDStore
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login

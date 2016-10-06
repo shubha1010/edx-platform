@@ -14,8 +14,8 @@ from django.test.utils import override_settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import AnonymousUser, User
 from importlib import import_module
-from external_auth.models import ExternalAuthMap
-from external_auth.views import (
+from openedx.core.djangoapps.external_auth.models import ExternalAuthMap
+from openedx.core.djangoapps.external_auth.views import (
     shib_login, course_specific_login, course_specific_register, _flatten_to_ascii
 )
 from mock import patch
@@ -155,7 +155,7 @@ class ShibSPTest(CacheIsolationTestCase):
             for remote_user in remote_users:
 
                 self.client.logout()
-                with patch('external_auth.views.AUDIT_LOG') as mock_audit_log:
+                with patch('openedx.core.djangoapps.external_auth.views.AUDIT_LOG') as mock_audit_log:
                     response = self.client.get(
                         reverse('shib-login'),
                         **{
@@ -231,7 +231,7 @@ class ShibSPTest(CacheIsolationTestCase):
         })
 
         request.user = AnonymousUser()
-        with patch('external_auth.views.AUDIT_LOG') as mock_audit_log:
+        with patch('openedx.core.djangoapps.external_auth.views.AUDIT_LOG') as mock_audit_log:
             response = shib_login(request)
         audit_log_calls = mock_audit_log.method_calls
         # reload user from db, since the view function works via db side-effects

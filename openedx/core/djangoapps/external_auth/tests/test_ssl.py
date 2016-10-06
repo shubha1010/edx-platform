@@ -14,8 +14,8 @@ from django.core.urlresolvers import reverse
 from django.test.client import Client
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
-from external_auth.models import ExternalAuthMap
-import external_auth.views
+from openedx.core.djangoapps.external_auth.models import ExternalAuthMap
+import openedx.core.djangoapps.external_auth.views
 from mock import Mock, patch
 
 from student.models import CourseEnrollment

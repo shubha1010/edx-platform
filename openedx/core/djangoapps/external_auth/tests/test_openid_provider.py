@@ -17,7 +17,7 @@ from django.test.client import RequestFactory
 from unittest import skipUnless
 
 from student.tests.factories import UserFactory
-from external_auth.views import provider_login
+from openedx.core.djangoapps.external_auth.views import provider_login
 
 
 class MyFetcher(HTTPFetcher):

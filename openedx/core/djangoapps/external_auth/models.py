@@ -6,7 +6,7 @@ file and check it in at the same time as your model changes. To do that,
 
 1. Go to the edx-platform dir
 2. ./manage.py lms schemamigration student --auto description_of_your_change
-3. Add the migration file created in edx-platform/common/djangoapps/external_auth/migrations/
+3. Add the migration file created in edx-platform/common/djangoapps/openedx.core.djangoapps.external_auth/migrations/
 """
 
 from django.db import models
