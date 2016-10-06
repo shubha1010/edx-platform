@@ -34,7 +34,6 @@ from testfixtures import LogCapture
 from commerce.models import CommerceConfiguration
 from commerce.tests import TEST_API_URL, TEST_API_SIGNING_KEY, factories
 from commerce.tests.mocks import mock_get_orders
-from commerce.utils import EcommerceService
 from course_modes.models import CourseMode
 from lms.djangoapps.oauth_dispatch.tests import factories as dot_factories
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
