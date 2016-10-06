@@ -846,9 +846,9 @@ class @Problem
     #   'enable' is a boolean to determine enabling/disabling of submit button.
     #   'changeText' is a boolean to determine if there is need to change the
     #    text of submit button as well.
-    attempts_remaining = @submitButton.data('attempts-remaining')
     if enable
-      if attempts_remaining != 0
+      submitCanBeEnabled = @submitButton.data('should-enable-submit-button')
+      if submitCanBeEnabled == "True"
         @submitButton.removeAttr 'disabled'
         # the is-disabled is needed for Lettuce test below
         # lms/djangoapps/courseware/features/problems.py submit_problem(step)
