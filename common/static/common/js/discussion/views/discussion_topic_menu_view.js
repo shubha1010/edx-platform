@@ -46,6 +46,7 @@
                 var categoryTemplate = edx.HtmlUtils.template($('#new-post-menu-category-template').html()),
                     entryTemplate = edx.HtmlUtils.template($('#new-post-menu-entry-template').html()),
                     mappedCategorySnippets = _.map(map.children, function(name) {
+                        name = name[0]
                         var entry,
                             html = '';
                         if (_.has(map.entries, name)) {
